@@ -24,18 +24,18 @@ import pandas as pd
 
 try:
     url = 'http://qpublic9.qpublic.net/hi_honolulu_display.php?KEY=940440610000&' + 'show_history=1&' + '#hist_taxes'
-            #url is updated with the current month and year
+    #url is updated with the current month and year
     # while True:
     req = urllib.request.Request(url)
-        #handles request
+    #handles request
 
     req.add_header('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.97 Safari/537.36 Vivaldi/1.9.818.49')
-        #adds User-Agent header
+    #adds User-Agent header
 
     resp = urllib.request.urlopen(req)
-        #prints header from response
+    #prints header from response
     respData = resp.read()
-        #handles the response back from server
+    #handles the response back from server
 
     soup = BeautifulSoup(respData, features="html5lib")
     body = soup.body
@@ -65,4 +65,4 @@ try:
 
 except Exception as e:
     print(str(e))
-        #prints error status codes
+    #prints error status codes
