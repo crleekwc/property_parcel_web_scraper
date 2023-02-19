@@ -2,19 +2,18 @@
 
 Purpose: Scrape parcel data off Hawaii Real Estate site
 
-Language: python3.6
+Language: python3
 Required module(s):
-Beautiful Soup 4 - pip3.6 install beautifulsoup4
-Requests - pip3.6 install requests
+Beautiful Soup 4 - pip3 install beautifulsoup4
 
 
 Date: 5-29-2017
+updated: 2-19-23
 Written by: Christopher Lee
 
 /////////////////////////////////////////'''
 
 from bs4 import BeautifulSoup
-import requests
 import urllib
 import datetime
 from datetime import timedelta
@@ -22,47 +21,40 @@ import openpyxl
 import re
 import pandas as pd
 
-try:
-    url = 'http://qpublic9.qpublic.net/hi_honolulu_display.php?KEY=940440610000&' + 'show_history=1&' + '#hist_taxes'
-    #url is updated with the current month and year
-    # while True:
+
+def get_response_data(url: str) -> bytes:
     req = urllib.request.Request(url)
-    #handles request
-
-    req.add_header('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.97 Safari/537.36 Vivaldi/1.9.818.49')
-    #adds User-Agent header
-
+    req.add_header('User-Agent',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.97 Safari/537.36 Vivaldi/1.9.818.49')
     resp = urllib.request.urlopen(req)
-    #prints header from response
-    respData = resp.read()
-    #handles the response back from server
+    resp_data = resp.read()
+    return resp_data
 
-    soup = BeautifulSoup(respData, features="html5lib")
-    body = soup.body
-
-    links = soup.find_all('a')
+def scrape_table_data(resp_data: bytes) -> None:
+    soup = BeautifulSoup(resp_data, features="html5lib")
     tables = soup.find_all('table')
-
-    for link in links:
-        x = str(link.contents)
-        if x == '[\' Next Parcel \']':
-            url = link.get('href') + 'show_history=1&' + '#hist_taxes'
-            print(url)
-
-    for table in tables[2:14]:
-        header = table.findAll(attrs={'class': re.compile(r".*\btable_header\b.*")})
-        if len(header) > 0:
-            print(header[0].find(text=True).strip())
-        df = pd.read_html(str(table), header=1)
-        for dataframe in df:
+    parcel_id = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)['KeyValue'][0]
+    for table in tables:
+        dataframes = pd.read_html(str(table), header=0)
+        for dataframe in dataframes:
             if not dataframe.empty:
+                if len(dataframe.columns) == 2:
+                    dataframe = dataframe.transpose().reset_index()
+                    header_row = dataframe.iloc[0]
+                    dataframe.rename(columns=header_row, inplace = True)
+                    dataframe = dataframe.iloc[1:].reset_index(drop = True)
+                    dataframe['Parcel Number'] = parcel_id
+                else:
+                    dataframe['Parcel Number'] = parcel_id
+                
                 print(dataframe.to_string())
-        print('\n\n')
-
-    if len(url) <= 6:
-        print(url)
+                print('\n')
 
 
-except Exception as e:
-    print(str(e))
-    #prints error status codes
+def main():
+    scrape_table_data(get_response_data(url))
+
+
+if __name__ == "__main__":
+    url = 'https://qpublic.schneidercorp.com/Application.aspx?AppID=1048&LayerID=23618&PageTypeID=4&PageID=9878&Q=1949324841&KeyValue=230210430000'
+    main()
