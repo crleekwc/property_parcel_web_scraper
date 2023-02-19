@@ -15,10 +15,6 @@ Written by: Christopher Lee
 
 from bs4 import BeautifulSoup
 import urllib
-import datetime
-from datetime import timedelta
-import openpyxl
-import re
 import pandas as pd
 
 
@@ -29,6 +25,10 @@ def get_response_data(url: str) -> bytes:
     resp = urllib.request.urlopen(req)
     resp_data = resp.read()
     return resp_data
+
+def remove_rows_with_totals(dataframe):
+    dataframe = dataframe[~dataframe.isin(['Totals:']).any(axis=1)].to_string()
+    return dataframe
 
 def scrape_table_data(resp_data: bytes) -> None:
     soup = BeautifulSoup(resp_data, features="html5lib")
@@ -47,8 +47,8 @@ def scrape_table_data(resp_data: bytes) -> None:
                 else:
                     dataframe['Parcel Number'] = parcel_id
                 
-                print(dataframe.to_string())
-                print('\n')
+                dataframe = remove_rows_with_totals(dataframe)
+                print(dataframe + '\n')
 
 
 def main():
